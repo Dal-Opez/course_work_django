@@ -1,5 +1,5 @@
 from django import forms
-from .models import Mailing, Client
+from .models import Mailing, Client, Message
 
 
 class MailingForm(forms.ModelForm):
@@ -13,3 +13,9 @@ class ClientForm(forms.ModelForm):
         model = Client
         fields = "__all__"
         exclude = ('owner',)
+
+
+class MessageForm(forms.ModelForm):
+    class Meta:
+        model = Message
+        fields = "__all__"

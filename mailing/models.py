@@ -76,3 +76,4 @@ class MailingAttempt(models.Model):
         verbose_name = "попытка"
         verbose_name_plural = "попытки"
         ordering = ["date_attempt"]
+

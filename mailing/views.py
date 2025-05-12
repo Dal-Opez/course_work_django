@@ -10,6 +10,13 @@ from mailing.models import Mailing, Client, Message, MailingAttempt
 class HomePageView(TemplateView):
     template_name = 'mailing/home_page.html'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['mailing_count'] = Mailing.objects.count()
+        context['active_mailing_count'] = Mailing.objects.filter(is_active=True).count()
+        context['client_count'] = Client.objects.count()
+        return context
+
 
 class MailingListView(ListView):
     model = Mailing
@@ -37,13 +44,13 @@ class ClientCreateView(CreateView):
     model = Client
     form_class = ClientForm
     template_name = "mailing/client_form.html"
-    success_url = reverse_lazy("mailing:clients_list")
+    success_url = reverse_lazy("mailing:client_list")
 
 
 class ClientUpdateView(UpdateView):
     model = Client
     form_class = ClientForm
-    success_url = reverse_lazy("mailing:clients_list")
+    success_url = reverse_lazy("mailing:client_list")
 
 
 class ClientDetailView(DetailView):
@@ -53,7 +60,7 @@ class ClientDetailView(DetailView):
 class ClientDeleteView(DeleteView):
     model = Client
     template_name = "mailing/client_confirm_delete.html"
-    success_url = reverse_lazy("mailing:clients_list")
+    success_url = reverse_lazy("mailing:client_list")
 
 
 class MessageListView(ListView):

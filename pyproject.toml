@@ -11,6 +11,7 @@ python-dotenv = "^1.1.0"
 pillow = "^11.2.1"
 django-countries = "^7.6.1"
 ipython = "^9.2.0"
+black = "^25.1.0"
 
 
 [build-system]

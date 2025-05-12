@@ -4,6 +4,7 @@ from django.urls import reverse_lazy
 
 from mailing.forms import MailingForm, ClientForm, MessageForm
 from mailing.models import Mailing, Client, Message, MailingAttempt
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
 # Create your views here.
@@ -23,11 +24,17 @@ class MailingListView(ListView):
     template_name = "mailing/mailing_list.html"
 
 
-class MailingCreateView(CreateView):
+class MailingCreateView(LoginRequiredMixin, CreateView):
     model = Mailing
     form_class = MailingForm
     template_name = 'mailing/mailing_form.html'
     success_url = reverse_lazy("mailing:mailing_list")
+
+    def form_valid(self, form):
+        client = form.save()
+        client.owner = self.request.user
+        client.save()
+        return super().form_valid(form)
 
 
 class MailingUpdateView(UpdateView):

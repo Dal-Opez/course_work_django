@@ -1,0 +1,52 @@
+{% extends 'mailing/base.html' %}
+{% block title %}Удаление клиента {{ object.full_name }}{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12 col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h3 class="card-title">Подтверждение удаления</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="alert alert-warning">
+                        <h4 class="alert-heading">Внимание!</h4>
+                        <p>Вы действительно хотите удалить клиента <strong>{{ object.full_name }}</strong>?</p>
+                        <hr>
+                        <p class="mb-0">Это действие нельзя отменить. Все связанные данные будут потеряны.</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <h5>Информация о клиенте:</h5>
+                        <ul class="list-group">
+                            <li class="list-group-item"><strong>Email:</strong> {{ object.email }}</li>
+                            {% if object.comment %}
+                            <li class="list-group-item"><strong>Комментарий:</strong> {{ object.comment }}</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+
+                    <div class="mb-3">
+                        <h5>Будет затронуто:</h5>
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                Рассылки: <span class="badge bg-primary">{{ object.mailing_set.count }}</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'mailing:client_detail' object.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Отменить
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash-alt"></i> Удалить навсегда
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

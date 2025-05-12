@@ -1,48 +1,74 @@
 {% extends 'mailing/base.html' %}
+{% block title %}Статистика рассылок{% endblock %}
 {% block content %}
-<div class="container marketing mt-5">
-    <div class="container text-center mt-3">
-        <div class="row justify-content-center">
-            <div class="col-4"></div>
-            <div class="col-4">
-                <h2>Статистика по рассылкам</h2>
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Статистика рассылок</h2>
+
+    <!-- Блок общей статистики -->
+    <div class="row mb-4 text-center">
+        <div class="col-md-4 mb-3">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h3>{{ total_attempts }}</h3>
+                    <p class="text-muted">Всего попыток</p>
+                </div>
             </div>
-            <div class="col-4"></div>
         </div>
-
+        <div class="col-md-4 mb-3">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h3>{{ success_count }}</h3>
+                    <p class="text-muted">Успешных</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h3>{{ failure_count }}</h3>
+                    <p class="text-muted">Неуспешных</p>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="row">
-        <div class="table-responsive small">
-            <table class="table table-success table-striped">
-                <thead>
-                <tr>
-                    <th>Тема сообщения</th>
-                    <th>Описание рассылки</th>
-                    <th>Дата</th>
-                    <th>Статус</th>
-                    <th>Ответ сервера</th>
-                    {% if user.is_authenticated %}
-                    <th>Создал</th>
-                    {% endif %}
-                </tr>
-                </thead>
 
-                {% for object in object_list %}
-                <tr>
-                    <td>{{ object.mailing.message.subject }}</td>
-                    <td>{{ object.mailing.message.content|truncatechars:30 }}</td>
-                    <td>{{ object.date_attempt}}</td>
-                    <td>{{ object.status}}</td>
-                    <td>{{ object.response}}</td>
-                    {% if user.is_authenticated %}
-                    <td>{{ object.mailing.owner }}</td>
-                    {% endif %}
-
-                </tr>
-                {% endfor%}
-            </table>
-
+    <!-- Таблица с попытками -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">История отправок</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Дата</th>
+                            <th>Статус</th>
+                            <th>Тема</th>
+                            <th>Результат</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attempt in object_list %}
+                        <tr class="{% if attempt.status == 'Успешно' %}table-success{% else %}table-danger{% endif %}">
+                            <td>{{ attempt.date_attempt|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                <span class="badge bg-{% if attempt.status == 'Успешно' %}success{% else %}danger{% endif %}">
+                                    {{ attempt.status }}
+                                </span>
+                            </td>
+                            <td>{{ attempt.mailing.message.title|truncatechars:30 }}</td>
+                            <td>{{ attempt.server_response|truncatechars:50|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">Нет данных о попытках отправки</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
-{% endblock %}}
+{% endblock %}

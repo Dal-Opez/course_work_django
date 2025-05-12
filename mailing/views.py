@@ -113,7 +113,16 @@ class MailingAttemptCreateView(CreateView):
 
 class MailingAttemptListView(ListView):
     model = MailingAttempt
-    template_name = "mailing/mailing_attempt_list.html"
+    template_name = 'mailing/mailing_attempt_list.html'
+    context_object_name = 'object_list'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        attempts = MailingAttempt.objects.all()
+        context['total_attempts'] = attempts.count()
+        context['success_count'] = attempts.filter(status='Успешно').count()
+        context['failure_count'] = attempts.filter(status='Не успешно').count()
+        return context
 
 
 def start_mailing(request, pk):

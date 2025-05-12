@@ -1,10 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DetailView, DeleteView
 from django.urls import reverse_lazy
-
+from django.contrib import messages
 from mailing.forms import MailingForm, ClientForm, MessageForm
 from mailing.models import Mailing, Client, Message, MailingAttempt
 from django.contrib.auth.mixins import LoginRequiredMixin
+
+from mailing.services import send_mailing
 
 
 # Create your views here.
@@ -41,6 +43,12 @@ class MailingUpdateView(UpdateView):
     model = Mailing
     form_class = MailingForm
     success_url = reverse_lazy("mailing:mailing_list")
+
+
+class MailingDetailView(DetailView):
+    model = Mailing
+    template_name = 'mailing/mailing_detail.html'
+    context_object_name = 'mailing'
 
 
 class ClientListView(ListView):
@@ -106,3 +114,15 @@ class MailingAttemptCreateView(CreateView):
 class MailingAttemptListView(ListView):
     model = MailingAttempt
     template_name = "mailing/mailing_attempt_list.html"
+
+
+def start_mailing(request, pk):
+    if request.method == 'POST':
+        mailing = get_object_or_404(Mailing, pk=pk)
+        try:
+            send_mailing(mailing)
+            messages.success(request, f'Рассылка #{mailing.id} запущена! Проверьте попытки отправки.')
+        except Exception as e:
+            messages.error(request, f'Ошибка: {str(e)}')
+
+    return redirect('mailing:mailing_list')

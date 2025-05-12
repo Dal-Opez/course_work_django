@@ -67,7 +67,7 @@ class MailingAttempt(models.Model):
         (FAIL, 'Не успешно'),
     ]
 
-    date_attempt = models.DateTimeField(verbose_name="Дата и время попытки")
+    date_attempt = models.DateTimeField(auto_now_add=True, verbose_name="Дата попытки")
     status = models.CharField(max_length=115, choices=ATTEMPT_STATUS_CHOICES, default=SUCCESS, verbose_name="Статус")
     server_response = models.TextField(verbose_name="Ответ почтового сервера", null=True, blank=True)
     mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE, verbose_name="Рассылка", related_name="mailing")

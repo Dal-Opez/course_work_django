@@ -1,3 +1,4 @@
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DetailView, DeleteView
 from django.urls import reverse_lazy
@@ -21,10 +22,12 @@ class HomePageView(TemplateView):
         return context
 
 
-class MailingListView(ListView):
+class MailingListView(LoginRequiredMixin, ListView):
     model = Mailing
     template_name = "mailing/mailing_list.html"
 
+    def get_queryset(self):
+        return Mailing.objects.filter(owner=self.request.user)
 
 class MailingCreateView(LoginRequiredMixin, CreateView):
     model = Mailing
@@ -32,17 +35,35 @@ class MailingCreateView(LoginRequiredMixin, CreateView):
     template_name = 'mailing/mailing_form.html'
     success_url = reverse_lazy("mailing:mailing_list")
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
-        client = form.save()
-        client.owner = self.request.user
-        client.save()
+        mailing = form.save(commit=False)
+        mailing.owner = self.request.user
+        mailing.save()
+        form.save_m2m()
         return super().form_valid(form)
 
 
-class MailingUpdateView(UpdateView):
+class MailingUpdateView(LoginRequiredMixin, UpdateView):
     model = Mailing
     form_class = MailingForm
+    template_name = 'mailing/mailing_form.html'
     success_url = reverse_lazy("mailing:mailing_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.owner != self.request.user:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
 
 
 class MailingDetailView(DetailView):
@@ -51,15 +72,45 @@ class MailingDetailView(DetailView):
     context_object_name = 'mailing'
 
 
-class ClientListView(ListView):
+class MailingDeleteView(LoginRequiredMixin, DeleteView):
+    model = Mailing
+    template_name = 'mailing/mailing_confirm_delete.html'
+    success_url = reverse_lazy('mailing:mailing_list')
+
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.owner != request.user:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+
+class ClientListView(LoginRequiredMixin, ListView):
     model = Client
+    template_name = 'mailing/client_list.html'  # явное указание шаблона
+    context_object_name = 'client_list'  # для ясности (необязательно)
+
+    def get_queryset(self):
+        queryset = super().get_queryset().filter(owner=self.request.user)
+        print("Клиенты пользователя:", queryset)
+        return queryset
 
 
-class ClientCreateView(CreateView):
+class ClientCreateView(LoginRequiredMixin, CreateView):
     model = Client
     form_class = ClientForm
     template_name = "mailing/client_form.html"
     success_url = reverse_lazy("mailing:client_list")
+
+    def form_valid(self, form):
+        if Client.objects.filter(
+                email=form.cleaned_data['email'],
+                owner=self.request.user
+        ).exists():
+            form.add_error('email', 'У вас уже есть клиент с таким email')
+            return self.form_invalid(form)
+
+        form.instance.owner = self.request.user
+        return super().form_valid(form)
 
 
 class ClientUpdateView(UpdateView):
@@ -78,47 +129,77 @@ class ClientDeleteView(DeleteView):
     success_url = reverse_lazy("mailing:client_list")
 
 
-class MessageListView(ListView):
+class MessageListView(LoginRequiredMixin, ListView):
     model = Message
-    form_class = MessageForm
     template_name = 'mailing/message_list.html'
+    context_object_name = 'message_list'
+
+    def get_queryset(self):
+        return Message.objects.filter(owner=self.request.user)
 
 
-class MessageCreateView(CreateView):
+class MessageCreateView(LoginRequiredMixin, CreateView):
     model = Message
     form_class = MessageForm
-    template_name = "mailing/message_form.html"
-    success_url = reverse_lazy("mailing:message_list")
+    template_name = 'mailing/message_form.html'
+    success_url = reverse_lazy('mailing:message_list')  # Важно!
+
+    def form_valid(self, form):
+        form.instance.owner = self.request.user
+        return super().form_valid(form)
 
 
-class MessageUpdateView(UpdateView):
+class MessageUpdateView(LoginRequiredMixin, UpdateView):
     model = Message
     form_class = MessageForm
-    success_url = reverse_lazy("mailing:message_list")
+    template_name = 'mailing/message_form.html'
+    success_url = reverse_lazy('mailing:message_list')
+
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.owner != request.user:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
 
 
-class MessageDetailView(DetailView):
+class MessageDetailView(LoginRequiredMixin, DetailView):
     model = Message
+    template_name = 'mailing/message_detail.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.owner != request.user:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
 
 
-class MessageDeleteView(DeleteView):
+class MessageDeleteView(LoginRequiredMixin, DeleteView):
     model = Message
-    template_name = "mailing/message_confirm_delete.html"
-    success_url = reverse_lazy("mailing:message_list")
+    template_name = 'mailing/message_confirm_delete.html'
+    success_url = reverse_lazy('mailing:message_list')
+
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.owner != request.user:
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
 
 
 class MailingAttemptCreateView(CreateView):
     model = MailingAttempt
 
 
-class MailingAttemptListView(ListView):
+class MailingAttemptListView(LoginRequiredMixin, ListView):
     model = MailingAttempt
     template_name = 'mailing/mailing_attempt_list.html'
     context_object_name = 'object_list'
 
+    def get_queryset(self):
+        return MailingAttempt.objects.filter(owner=self.request.user)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        attempts = MailingAttempt.objects.all()
+        attempts = self.get_queryset()  # Используем уже отфильтрованный queryset
         context['total_attempts'] = attempts.count()
         context['success_count'] = attempts.filter(status='Успешно').count()
         context['failure_count'] = attempts.filter(status='Не успешно').count()

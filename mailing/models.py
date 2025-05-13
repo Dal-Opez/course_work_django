@@ -3,15 +3,16 @@ from users.models import User
 
 # Create your models here.
 class Client(models.Model):
-    email = models.EmailField(max_length=100, unique=True, verbose_name="Адрес почты")
+    email = models.EmailField(max_length=100, verbose_name="Адрес почты")
     full_name = models.CharField(max_length=150, verbose_name="Полное имя")
     comment = models.TextField(verbose_name="Комментарии", null=True, blank=True)
-    owner = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Кем добавлен клиент")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Владелец")
 
     def __str__(self):
         return f"{self.full_name} {self.email}"
 
     class Meta:
+        unique_together = ('email', 'owner')  # Уникальная пара email+владелец
         verbose_name = "получатель"
         verbose_name_plural = "получатели"
         ordering = ["full_name"]
@@ -20,7 +21,7 @@ class Client(models.Model):
 class Message(models.Model):
     title = models.CharField(max_length=150, verbose_name="Тема письма")
     letter_body = models.TextField(verbose_name="Тело письма")
-    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Кем добавлено письмо")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Кем добавлено письмо")
 
     def __str__(self):
         return self.title
@@ -29,6 +30,10 @@ class Message(models.Model):
         verbose_name = "письмо"
         verbose_name_plural = "письма"
         ordering = ["title"]
+        permissions = [
+            ("view_all_mailings", "Can view all mailings"),
+        ]
+
 
 
 class Mailing(models.Model):
@@ -71,9 +76,16 @@ class MailingAttempt(models.Model):
     status = models.CharField(max_length=115, choices=ATTEMPT_STATUS_CHOICES, default=SUCCESS, verbose_name="Статус")
     server_response = models.TextField(verbose_name="Ответ почтового сервера", null=True, blank=True)
     mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE, verbose_name="Рассылка", related_name="mailing")
-    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Чья рассылка")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Чья рассылка")
+
     def __str__(self):
         return f'{self.date_attempt} - {self.status}'
+
+    def save(self, *args, **kwargs):
+        if not self.pk and hasattr(self.mailing, 'owner'):
+            self.owner = self.mailing.owner
+        super().save(*args, **kwargs)
+
 
     class Meta:
         verbose_name = "попытка"

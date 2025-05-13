@@ -29,6 +29,7 @@
                     </thead>
                     <tbody>
                         {% for mailing in object_list %}
+                        {% if mailing.owner == request.user %}
                         <tr>
                             <td>{{ mailing.id }}</td>
                             <td>{{ mailing.start_sending|default:"Не указано" }}</td>
@@ -49,7 +50,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ mailing.message.title }}</td>
-                            <td>
+                           <td>
                                 <div class="d-flex flex-column gap-2">
                                     <a href="{% url 'mailing:mailing_detail' mailing.pk %}"
                                        class="btn btn-sm btn-info">
@@ -65,9 +66,17 @@
                                             <i class="fas fa-play"></i> Запустить
                                         </button>
                                     </form>
+                                    <form method="post" action="{% url 'mailing:mailing_delete' mailing.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger w-100"
+                                                onclick="return confirm('Вы уверены, что хотите удалить эту рассылку?')">
+                                            <i class="fas fa-trash"></i> Удалить
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
+                        {% endif %}
                         {% empty %}
                         <tr>
                             <td colspan="7" class="text-center">Нет доступных рассылок</td>

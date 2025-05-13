@@ -13,6 +13,7 @@ class User(AbstractUser):
     avatar = models.ImageField(upload_to="photo/avatars/", blank=True, null=True, verbose_name="Аватар")
     country = models.CharField(max_length=50, blank=True, null=True, verbose_name="Страна", help_text="Укажите страну")
     token = models.CharField(max_length=100, verbose_name="Token", blank=True, null=True)
+    is_blocked = models.BooleanField(default=False, verbose_name='Заблокирован')
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

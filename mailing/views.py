@@ -1,5 +1,6 @@
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, get_object_or_404, redirect
+from django.views import View
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DetailView, DeleteView
 from django.urls import reverse_lazy
 from django.contrib import messages
@@ -19,6 +20,7 @@ class HomePageView(TemplateView):
         context['mailing_count'] = Mailing.objects.count()
         context['active_mailing_count'] = Mailing.objects.filter(is_active=True).count()
         context['client_count'] = Client.objects.count()
+        context['is_manager'] = self.request.user.has_perm('mailing.view_all_mailings')
         return context
 
 
@@ -27,7 +29,14 @@ class MailingListView(LoginRequiredMixin, ListView):
     template_name = "mailing/mailing_list.html"
 
     def get_queryset(self):
+        if self.request.user.has_perm('mailing.view_all_mailings'):
+            return Mailing.objects.all()
         return Mailing.objects.filter(owner=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_manager'] = self.request.user.has_perm('mailing.view_all_mailings')
+        return context
 
 class MailingCreateView(LoginRequiredMixin, CreateView):
     model = Mailing
@@ -90,9 +99,16 @@ class ClientListView(LoginRequiredMixin, ListView):
     context_object_name = 'client_list'  # для ясности (необязательно)
 
     def get_queryset(self):
+        if self.request.user.has_perm('mailing.view_all_clients'):
+            return Client.objects.order_by('email').distinct('email')
         queryset = super().get_queryset().filter(owner=self.request.user)
         print("Клиенты пользователя:", queryset)
         return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_manager'] = self.request.user.has_perm('mailing.view_all_mailings')
+        return context
 
 
 class ClientCreateView(LoginRequiredMixin, CreateView):
@@ -136,6 +152,11 @@ class MessageListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Message.objects.filter(owner=self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_manager'] = self.request.user.has_perm('mailing.view_all_mailings')
+        return context
 
 
 class MessageCreateView(LoginRequiredMixin, CreateView):
@@ -204,6 +225,15 @@ class MailingAttemptListView(LoginRequiredMixin, ListView):
         context['success_count'] = attempts.filter(status='Успешно').count()
         context['failure_count'] = attempts.filter(status='Не успешно').count()
         return context
+
+
+class MailingToggleView(View):
+    def post(self, request, pk):
+        mailing = get_object_or_404(Mailing, pk=pk)
+        mailing.is_active = not mailing.is_active
+        mailing.save()
+        messages.success(request, f'Рассылка #{mailing.id} {"отключена" if not mailing.is_active else "включена"}')
+        return redirect('mailing:mailing_list')
 
 
 def start_mailing(request, pk):

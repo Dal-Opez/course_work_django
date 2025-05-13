@@ -1,15 +1,18 @@
 import secrets
+
+from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib.auth.views import PasswordResetConfirmView, PasswordResetView
-from django.views.generic import CreateView, FormView
+from django.views.generic import CreateView, FormView, ListView
 from users.forms import UserForgotPasswordForm, UserRegisterForm, PasswordRecoveryForm
 from django.urls import reverse_lazy, reverse
 from config.settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
 from .models import User
 from django.shortcuts import get_object_or_404, redirect
-from django.http import HttpResponse
 from django.utils.crypto import get_random_string
+from django.contrib import messages
+
 
 
 # Create your views here.
@@ -34,6 +37,11 @@ class RegisterView(CreateView):
         )
         return super().form_valid(form)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_manager'] = self.request.user.has_perm('mailing.view_all_mailings')
+        return context
+
 
 def email_verification(request, token):
     user = get_object_or_404(User, token=token)
@@ -55,6 +63,7 @@ class UserForgotPasswordView(SuccessMessageMixin, PasswordResetView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "Запрос на восстановление пароля"
+        context['is_manager'] = self.request.user.has_perm('mailing.view_all_mailings')
         return context
 
 
@@ -79,3 +88,31 @@ class PasswordRecoveryView(FormView):
             fail_silently=False,
         )
         return super().form_valid(form)
+
+
+class UserListView(PermissionRequiredMixin, ListView):
+    model = User
+    template_name = 'users/user_list.html'
+    context_object_name = 'user_list'
+    permission_required = 'users.can_view_all_users'
+
+    def get_queryset(self):
+        return User.objects.all().order_by('email')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_manager'] = True
+        return context
+
+
+def toggle_block_user(request, pk):
+    if not request.user.has_perm('users.can_block_user'):
+        return redirect('users:user_list')
+
+    user = get_object_or_404(User, pk=pk)
+    user.is_blocked = not user.is_blocked
+    user.save()
+
+    messages.success(request,
+                     f'Пользователь {user.email} {"разблокирован" if not user.is_blocked else "заблокирован"}')
+    return redirect('users:user_list')

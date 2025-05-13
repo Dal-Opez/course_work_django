@@ -1,13 +1,13 @@
 {% extends 'mailing/base.html' %}
 
-{% block title %}Список рассылок{% endblock %}
+{% block title %}{% if is_manager %}Все рассылки{% else %}Мои рассылки{% endif %}{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Список рассылок</h3>
+                <h3 class="card-title">{% if is_manager %}Все рассылки{% else %}Мои рассылки{% endif %}</h3>
                 <div class="float-end">
                     <a href="{% url 'mailing:mailing_create' %}" class="btn btn-primary">
                         <i class="fas fa-plus"></i> Добавить рассылку
@@ -19,6 +19,7 @@
                     <thead>
                         <tr>
                             <th>ID</th>
+                            {% if is_manager %}<th>Владелец</th>{% endif %}
                             <th>Дата начала</th>
                             <th>Дата окончания</th>
                             <th>Статус</th>
@@ -29,9 +30,10 @@
                     </thead>
                     <tbody>
                         {% for mailing in object_list %}
-                        {% if mailing.owner == request.user %}
+                        {% if is_manager or mailing.owner == request.user %}
                         <tr>
                             <td>{{ mailing.id }}</td>
+                            {% if is_manager %}<td>{{ mailing.owner.email }}</td>{% endif %}
                             <td>{{ mailing.start_sending|default:"Не указано" }}</td>
                             <td>{{ mailing.end_sending|default:"Не указано" }}</td>
                             <td>
@@ -50,12 +52,13 @@
                                 {% endif %}
                             </td>
                             <td>{{ mailing.message.title }}</td>
-                           <td>
+                            <td>
                                 <div class="d-flex flex-column gap-2">
                                     <a href="{% url 'mailing:mailing_detail' mailing.pk %}"
                                        class="btn btn-sm btn-info">
                                        <i class="fas fa-eye"></i> Просмотр
                                     </a>
+                                    {% if not is_manager %}
                                     <a href="{% url 'mailing:mailing_update' mailing.pk %}"
                                        class="btn btn-sm btn-warning">
                                        <i class="fas fa-edit"></i> Редактировать
@@ -73,13 +76,21 @@
                                             <i class="fas fa-trash"></i> Удалить
                                         </button>
                                     </form>
+                                    {% else %}
+                                    <form method="post" action="{% url 'mailing:mailing_toggle' mailing.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-secondary w-100">
+                                            <i class="fas fa-power-off"></i> Отключить
+                                        </button>
+                                    </form>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
                         {% endif %}
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center">Нет доступных рассылок</td>
+                            <td colspan="{% if is_manager %}8{% else %}7{% endif %}" class="text-center">Нет доступных рассылок</td>
                         </tr>
                         {% endfor %}
                     </tbody>

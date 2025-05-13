@@ -3,7 +3,7 @@ from mailing.apps import MailingConfig
 from .views import HomePageView, MailingListView, MailingCreateView, MailingUpdateView, ClientListView, \
     ClientCreateView, ClientUpdateView, ClientDetailView, ClientDeleteView, MessageListView, MessageCreateView, \
     MessageUpdateView, MessageDetailView, MessageDeleteView, MailingAttemptListView, start_mailing, MailingDetailView, \
-    MailingDeleteView
+    MailingDeleteView, MailingToggleView
 
 app_name = MailingConfig.name
 
@@ -26,4 +26,5 @@ urlpatterns = [
     path('messages/detail/<int:pk>/', MessageDetailView.as_view(), name='message_detail'),
     path('messages/delete/<int:pk>/', MessageDeleteView.as_view(), name='message_delete'),
     path("mailing_attempt/", MailingAttemptListView.as_view(), name="mailing_attempt_list"),
+path('mailing/toggle/<int:pk>/', MailingToggleView.as_view(), name='mailing_toggle'),
 ]

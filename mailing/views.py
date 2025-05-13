@@ -7,13 +7,18 @@ from django.contrib import messages
 from mailing.forms import MailingForm, ClientForm, MessageForm
 from mailing.models import Mailing, Client, Message, MailingAttempt
 from django.contrib.auth.mixins import LoginRequiredMixin
-
+from django.utils.decorators import method_decorator
 from mailing.services import send_mailing
-
+from django.views.decorators.cache import cache_page
+from django.core.cache import cache
 
 # Create your views here.
 class HomePageView(TemplateView):
     template_name = 'mailing/home_page.html'
+
+    @method_decorator(cache_page(60 * 5))
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -30,8 +35,16 @@ class MailingListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         if self.request.user.has_perm('mailing.view_all_mailings'):
-            return Mailing.objects.all()
-        return Mailing.objects.filter(owner=self.request.user)
+            queryset = cache.get('manager_mailing_list_queryset')
+            if not queryset:
+                queryset = Mailing.objects.all()
+                cache.set('manager_mailing_list_queryset', queryset, 60 * 5)
+            return queryset
+        queryset = cache.get('mailing_list_queryset')
+        if not queryset:
+            queryset = Mailing.objects.all()
+            cache.set('manager_mailing_list_queryset', queryset, 60 * 5)
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

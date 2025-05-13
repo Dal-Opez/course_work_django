@@ -42,7 +42,7 @@ class MailingListView(LoginRequiredMixin, ListView):
             return queryset
         queryset = cache.get('mailing_list_queryset')
         if not queryset:
-            queryset = Mailing.objects.all()
+            queryset = Mailing.objects.filter(owner=self.request.user)
             cache.set('manager_mailing_list_queryset', queryset, 60 * 5)
         return queryset
 

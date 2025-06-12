@@ -1,0 +1,40 @@
+{% extends 'mailing/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">
+        {% if object %}
+            Редактировать письмо
+        {% else %}
+            Новое письмо
+        {% endif %}
+    </h2>
+
+    <form method="post" class="mb-4">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="{{ form.title.id_for_label }}" class="form-label">Тема письма</label>
+            {{ form.title }}
+            {% if form.title.errors %}
+                <div class="text-danger small mt-1">{{ form.title.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="mb-4">
+            <label for="{{ form.letter_body.id_for_label }}" class="form-label">Текст письма</label>
+            {{ form.letter_body }}
+            {% if form.letter_body.errors %}
+                <div class="text-danger small mt-1">{{ form.letter_body.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                {% if object %}Сохранить{% else %}Создать{% endif %}
+            </button>
+            <a href="{% url 'mailing:message_list' %}" class="btn btn-outline-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

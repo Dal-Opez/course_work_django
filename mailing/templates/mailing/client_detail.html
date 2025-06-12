@@ -1,0 +1,67 @@
+{% extends 'mailing/base.html' %}
+{% block title %}Клиент {{ object.full_name }}{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12 col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">Детальная информация о клиенте</h3>
+                    <div>
+                        <a href="{% url 'mailing:client_update' object.pk %}" class="btn btn-sm btn-warning">
+                            Редактировать
+                        </a>
+                        <a href="{% url 'mailing:client_delete' object.pk %}" class="btn btn-sm btn-danger">
+                            Удалить
+                        </a>
+                        <a href="{% url 'mailing:client_list' %}" class="btn btn-sm btn-secondary">
+                            Назад к списку
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4 font-weight-bold">ФИО:</div>
+                    <div class="col-md-8">{{ object.full_name }}</div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4 font-weight-bold">Email:</div>
+                    <div class="col-md-8">{{ object.email }}</div>
+                </div>
+
+                {% if object.comment %}
+                <div class="row mb-3">
+                    <div class="col-md-4 font-weight-bold">Комментарий:</div>
+                    <div class="col-md-8">{{ object.comment }}</div>
+                </div>
+                {% endif %}
+
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h5 class="mb-3">Рассылки с этим клиентом:</h5>
+                        {% if object.mailing_set.all %}
+                        <ul class="list-group">
+                            {% for mailing in object.mailing_set.all %}
+                            <li class="list-group-item">
+                                <a href="#">
+                                    Рассылка #{{ mailing.id }} ({{ mailing.get_status_display }})
+                                </a>
+                                <span class="badge bg-{% if mailing.is_active %}success{% else %}secondary{% endif %} float-end">
+                                    {% if mailing.is_active %}Активна{% else %}Неактивна{% endif %}
+                                </span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <div class="alert alert-info">Этот клиент не участвует ни в одной рассылке</div>
+                        {% endif %}
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

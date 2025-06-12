@@ -1,0 +1,77 @@
+{% extends 'mailing/base.html' %}
+{% block title %}Моя статистика рассылок{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Моя статистика рассылок</h2>
+    <div class="row mb-4 text-center">
+        <div class="col-md-4 mb-3">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h3>{{ total_attempts }}</h3>
+                    <p class="text-muted">Мои попытки</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h3>{{ success_count }}</h3>
+                    <p class="text-muted">Успешных</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h3>{{ failure_count }}</h3>
+                    <p class="text-muted">Неуспешных</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Мои отправки</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Дата</th>
+                            <th>Статус</th>
+                            <th>Тема</th>
+                            <th>Результат</th>
+                            <th>Рассылка</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attempt in object_list %}
+                        <tr class="{% if attempt.status == 'Успешно' %}table-success{% else %}table-danger{% endif %}">
+                            <td>{{ attempt.date_attempt|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                <span class="badge bg-{% if attempt.status == 'Успешно' %}success{% else %}danger{% endif %}">
+                                    {{ attempt.status }}
+                                </span>
+                            </td>
+                            <td>{{ attempt.mailing.message.title|truncatechars:30 }}</td>
+                            <td>{{ attempt.server_response|truncatechars:50|default:"-" }}</td>
+                            <td>
+                                <a href="{% url 'mailing:mailing_detail' attempt.mailing.pk %}"
+                                   class="btn btn-sm btn-outline-primary">
+                                   Просмотр
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">У вас пока нет попыток отправки</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
